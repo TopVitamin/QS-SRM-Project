@@ -14,7 +14,8 @@ import type {
 } from '../domain/views'
 import { BizError, canSee, isSupplierActor, type Ctx } from './core'
 import { redEffectiveStatus } from './finance'
-import { CONFIRM_LIMIT, latestKitting, lineQty, orderAlerts, receiptStatusOf, requestStatus, shipmentErpStatus } from './rules'
+import { CONFIRM_LIMIT, latestKitting, lineQty, orderAlerts, receiptStatusOf, requestStatus } from './rules'
+import { shipmentActions } from './shipments'
 import { listOrders, supplierBrief } from './views'
 
 const alertMessages = {
@@ -103,7 +104,7 @@ export function portalDashboard(ctx: Ctx): PortalDashboard {
   const cards = [
     card('confirm', '待确认订单', orders.filter((o) => o.confirmStatus === 'pending' && o.bizStatus === 'open').length, '/portal/orders?tab=pending', ['supplier'], 'orange'),
     card('ship', '待发货订单', orders.filter((o) => o.actions.ship.ok).length, '/portal/shipments/new', ['supplier'], 'blue'),
-    card('appoint', '待预约的发货单', shipments.filter((s) => s.status === 'submitted' && !db.appointments.some((a) => a.shipmentId === s.id && a.status !== 'cancelled') && ['waitingNotice', 'issued', 'pushing'].includes(shipmentErpStatus(db, s))).length, '/portal/appointments', ['supplier'], 'blue'),
+    card('appoint', '待预约的发货单', shipments.filter((s) => shipmentActions(ctx, s).appoint.ok).length, '/portal/appointments', ['supplier'], 'blue'),
     card('returned', '预约被退回改约', db.appointments.filter((a) => a.supplierCode === code && a.status === 'returned').length, '/portal/appointments', ['supplier'], 'red'),
     card('returns', '退货待确认知悉', db.returns.filter((r) => r.supplierCode === code && r.ack === 'pending').length, '/portal/receipts?tab=returns', ['supplier'], 'orange'),
     card('recon', '待确认对账单', db.reconciliations.filter((r) => r.supplierCode === code && r.status === 'sent').length, '/portal/reconciliations', ['supplier'], 'orange'),
