@@ -1,0 +1,49 @@
+{
+  "name": "qs-srm-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "lint": "oxlint",
+    "check:seed": "rolldown scripts/check-seed.ts -p node -f esm -o node_modules/.tmp/check-seed.mjs --logLevel warn && node node_modules/.tmp/check-seed.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mantine/charts": "9.7.2",
+    "@mantine/core": "9.7.2",
+    "@mantine/dates": "9.7.2",
+    "@mantine/form": "9.7.2",
+    "@mantine/hooks": "9.7.2",
+    "@mantine/notifications": "9.7.2",
+    "@tabler/icons-react": "^3.49.0",
+    "@tanstack/react-query": "^5.104.3",
+    "@tanstack/react-table": "^9.3.1",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.23",
+    "mantine-datatable": "^9.4.0",
+    "msw": "^3.0.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.4",
+    "recharts": "^3.10.1",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.88.0",
+    "postcss": "^8.5.6",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.4"
+  }
+}
