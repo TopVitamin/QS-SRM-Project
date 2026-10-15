@@ -2,6 +2,7 @@ import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Text, TextInput
 import { IconUserShare } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { proxyBasisTypes } from '../domain/labels'
+import { RichText } from './marks'
 
 export interface ProxyValue {
   basisType: string
@@ -97,7 +98,14 @@ export function ReasonModal({
   return (
     <Modal opened={opened} onClose={close} title={title} size="lg">
       <Stack gap="sm">
-        {description && (typeof description === 'string' ? <Text fz="sm">{description}</Text> : description)}
+        {description &&
+          (typeof description === 'string' ? (
+            <Text fz="sm">
+              <RichText>{description}</RichText>
+            </Text>
+          ) : (
+            description
+          ))}
         {children}
         {label !== null && (
           <Textarea

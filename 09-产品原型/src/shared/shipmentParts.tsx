@@ -136,7 +136,17 @@ export function ReceiptTable({ rows, extra }: { rows: (ErpReceipt & { supplierNa
   )
 }
 
-export function ReturnTable({ rows, actions, orderBase }: { rows: ReturnView[]; actions?: (row: ReturnView) => ReactNode; orderBase?: string }) {
+export function ReturnTable({
+  rows,
+  actions,
+  orderBase,
+  showSupplier = true,
+}: {
+  rows: ReturnView[]
+  actions?: (row: ReturnView) => ReactNode
+  orderBase?: string
+  showSupplier?: boolean
+}) {
   return (
     <DataTable
       records={rows}
@@ -158,7 +168,7 @@ export function ReturnTable({ rows, actions, orderBase }: { rows: ReturnView[]; 
           ),
         },
         { accessor: 'orderNo', title: 'SRM采购订单', render: (r) => <DocNo no={r.orderNo} to={orderBase ? `${orderBase}/${r.orderId}` : undefined} /> },
-        { accessor: 'supplierName', title: '供应商' },
+        { accessor: 'supplierName', title: '供应商', hidden: !showSupplier },
         {
           accessor: 'lines',
           title: '退货行',
