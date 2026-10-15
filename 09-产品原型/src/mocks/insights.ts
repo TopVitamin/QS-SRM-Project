@@ -5,6 +5,7 @@ import type {
   AlertView,
   DashboardCard,
   DashboardData,
+  DemoScenario,
   NavBadges,
   PerformanceRow,
   PortalDashboard,
@@ -377,6 +378,76 @@ export function traceSamples(ctx: Ctx): { validBox?: string; voidBox?: string; r
   const receipts = db.receipts.filter((r) => canSee(ctx, r.supplierCode))
   const receipt = receipts.find((r) => invoiced(r).red) ?? receipts.find((r) => invoiced(r).invoiced) ?? receipts[0]
   return { validBox: validBox?.code, voidBox: voidBox?.code, receiptNo: receipt?.no }
+}
+
+// ---------------------------------------------------------------- 演示路线
+
+/** 按示例数据当前的样子找每个场景的入口，重置或改动之后仍然指向能走通的单据。 */
+export function demoScenarios(ctx: Ctx): DemoScenario[] {
+  if (isSupplierActor(ctx)) throw new BizError('无权查看', 403)
+  const db = ctx.db
+  const orders = db.orders.filter((o) => canSee(ctx, o.supplierCode))
+  const links = (...items: [string, string | undefined][]) =>
+    items.filter((item): item is [string, string] => !!item[1]).map(([label, to]) => ({ label, to }))
+  const shortage = orders.find(
+    (o) =>
+      o.lines.some((l) => latestKitting(db, o.id, l.lineNo)?.status === '缺料') &&
+      db.suggestions.some((s) => s.orderId === o.id && s.status === 'pending'),
+  )
+  const lagging = orders.find((o) => db.changes.some((c) => c.orderId === o.id && c.source === 'suggestion' && c.status === 'failed'))
+  const twice = orders.find((o) => db.shipments.filter((s) => s.orderId === o.id && s.status === 'submitted').length >= 2)
+  const issued = twice && db.shipments.find((s) => s.orderId === twice.id && db.notices.some((n) => n.id === s.noticeId && n.status === 'issued'))
+  const proxySupplier = db.suppliers.find((s) => s.portalStatus === '未开通' && canSee(ctx, s.code) && orders.some((o) => o.supplierCode === s.code))
+  const proxyOrder =
+    proxySupplier &&
+    (orders.find((o) => o.supplierCode === proxySupplier.code && db.confirmations.some((c) => c.orderId === o.id && c.proxy)) ??
+      orders.find((o) => o.supplierCode === proxySupplier.code))
+  const samples = traceSamples(ctx)
+  const at = (path: string, id?: string) => (id ? `${path}/${id}` : undefined)
+  return [
+    {
+      key: 'shortage',
+      title: '缺料提前看见',
+      basis: '《9》§2.1',
+      summary: '供应商登记缺料并提交交期建议；采购接受后在SRM生成变更推送ERP。推送失败时订单显示「SRM已接受、ERP尚未更新」。',
+      links: links(['缺料且有建议待处理的订单', at('/buyer/orders', shortage?.id)], ['建议已接受、ERP未更新的订单', at('/buyer/orders', lagging?.id)], ['交付预警', '/buyer/alerts']),
+    },
+    {
+      key: 'box',
+      title: '一个外箱追回工厂和批次',
+      basis: '《9》§2.2',
+      summary: '输入箱码，追到发货单、SRM采购订单、ERP采购订单和入库结果；作废码醒目提示替换码。',
+      links: links(
+        ['查有效箱码', samples.validBox && `/buyer/trace?box=${samples.validBox}`],
+        ['查作废箱码', samples.voidBox && `/buyer/trace?box=${samples.voidBox}`],
+      ),
+    },
+    {
+      key: 'twice',
+      title: '分两次到货，第二次没收齐',
+      basis: '《9》§2.3',
+      summary: '一张订单两张发货单。用发货单上的「模拟回传」生成收货通知单，再模拟WMS全收、缺量或零收。',
+      links: links(['两次发货的订单', at('/buyer/orders', twice?.id)], ['已下发WMS、待收货的发货单', at('/buyer/shipments', issued?.id)]),
+    },
+    {
+      key: 'proxy',
+      title: '未上线的工厂由采购代录',
+      basis: '《9》§2.4',
+      summary: '门户未开通的供应商，由采购代录确认、发货和预约。代录依据必填，日志记代录人、时间和依据。',
+      links: links(
+        ['代录的订单', at('/buyer/orders', proxyOrder?.id)],
+        ['未开通门户的供应商', at('/buyer/suppliers', proxySupplier?.code)],
+        ['代录日志', '/buyer/audit-logs?proxy=1'],
+      ),
+    },
+    {
+      key: 'invoice',
+      title: '抽一张入库单追到税票',
+      basis: '《9》§3.2',
+      summary: '从采购入库单号查到对账单、开票申请、20位数电票和红字记录；应付、核销、付款在金蝶。',
+      links: links(['按入库单追溯', samples.receiptNo && `/buyer/trace?receipt=${samples.receiptNo}`]),
+    },
+  ]
 }
 
 // ---------------------------------------------------------------- 操作日志

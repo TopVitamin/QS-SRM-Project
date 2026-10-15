@@ -97,6 +97,13 @@ function exercise(db: Db, now: number, label: string) {
         const samples = insights.traceSamples(ctx)
         for (const box of [samples.validBox, samples.voidBox]) if (box) check(insights.trace(ctx, { box }).found, `${who} 追溯不到箱码${box}`)
         if (samples.receiptNo) check(insights.trace(ctx, { receipt: samples.receiptNo }).found, `${who} 追溯不到入库单`)
+        const expectedLinks: Record<string, number> = { shortage: 3, box: 2, twice: 2, proxy: 3, invoice: 1 }
+        for (const scenario of insights.demoScenarios(ctx)) {
+          check(
+            scenario.links.length === expectedLinks[scenario.key],
+            `${who} 演示路线「${scenario.title}」只找到${scenario.links.length}个入口：${scenario.links.map((l) => l.label).join('、')}`,
+          )
+        }
       }
     } catch (error) {
       failures.push(`${who} 接口出错：${(error as Error).message}`)

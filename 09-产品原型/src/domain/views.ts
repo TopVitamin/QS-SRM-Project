@@ -336,9 +336,21 @@ export interface NavBadges {
 export interface DemoIdentities {
   enterprise: { id: string; name: string; role: string }[]
   suppliers: (SupplierBrief & { users: PortalUser[] })[]
+  /** 门户未开通、由采购代录的供应商，入口页只做说明。 */
+  proxySuppliers: { code: string; name: string }[]
+  seededAt: number
 }
 
 export interface SupplierPrices {
   supplierCode: string
   skus: (Sku & { price?: PriceEntry })[]
+}
+
+/** 工作台首页的演示路线：《9》的检验场景各给一个入口。 */
+export interface DemoScenario {
+  key: string
+  title: string
+  basis: string
+  summary: string
+  links: { label: string; to: string }[]
 }

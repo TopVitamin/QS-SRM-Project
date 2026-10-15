@@ -125,6 +125,8 @@ function identities(db: Db): DemoIdentities {
         tier: s.tier,
         users: db.portalUsers.filter((u) => u.supplierCode === s.code && u.status === '启用'),
       })),
+    proxySuppliers: db.suppliers.filter((s) => s.portalStatus === '未开通').map((s) => ({ code: s.code, name: s.name })),
+    seededAt: db.seededAt,
   }
 }
 
@@ -145,6 +147,7 @@ export const handlers = [
   get('/meta', (ctx): Meta => ({ skus: ctx.db.skus, warehouses: ctx.db.warehouses })),
   get('/badges', (ctx) => insights.navBadges(ctx)),
   get('/dashboard', (ctx) => insights.dashboard(ctx)),
+  get('/demo/scenarios', (ctx) => insights.demoScenarios(ctx)),
   get('/portal/dashboard', (ctx) => insights.portalDashboard(ctx)),
 
   // ------------------------------------------------------------ 采购订单

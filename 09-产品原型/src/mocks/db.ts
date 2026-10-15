@@ -1,8 +1,6 @@
+import { DB_STORAGE_KEY as DB_KEY, REV_STORAGE_KEY as REV_KEY } from '../domain/protocol'
 import type { Db } from '../domain/types'
 import { DB_VERSION, buildSeed } from './seed'
-
-const DB_KEY = 'qs-srm-demo-db'
-export const REV_KEY = 'qs-srm-demo-rev'
 
 let cache: Db | null = null
 
