@@ -1,20 +1,40 @@
-import { Alert, Badge, Box, Button, Collapse, Group, Modal, NumberInput, Paper, SegmentedControl, SimpleGrid, Stack, Text, TextInput, Textarea } from '@mantine/core'
+import {
+  ActionIcon,
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Collapse,
+  FileButton,
+  Group,
+  Loader,
+  Modal,
+  NumberInput,
+  Paper,
+  SegmentedControl,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+  Textarea,
+} from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
-import { useDisclosure, useMediaQuery } from '@mantine/hooks'
-import { IconAlertTriangle, IconCircleCheck, IconCircleDashed, IconCircleX, type Icon } from '@tabler/icons-react'
+import { useDebouncedValue, useDisclosure, useMediaQuery } from '@mantine/hooks'
+import { IconAlertTriangle, IconCircleCheck, IconCircleDashed, IconCircleX, IconPaperclip, type Icon } from '@tabler/icons-react'
 import { DataTable } from 'mantine-datatable'
 import { useState, type ReactNode } from 'react'
-import { useAction } from '../api/hooks'
+import { useAction, useCompute } from '../api/hooks'
 import { ActionButton } from '../components/ActionButton'
 import { numCell } from '../components/columns'
 import { Fields } from '../components/Fields'
-import { DocNo, Note, RichText } from '../components/marks'
+import { DocNo, Note, PendingTag, RichText } from '../components/marks'
 import { StatusBadge } from '../components/StatusBadge'
 import { EMPTY, fmtDate, fmtDateTime, fmtMoney, fmtRate, todayStr } from '../domain/format'
 import { round2 } from '../domain/money'
 import type { Precheck, PrecheckItem } from '../domain/types'
-import type { InvoiceView, RedLetterView } from '../domain/views'
+import type { InvoiceRequestView, InvoiceView, RedLetterView } from '../domain/views'
 
 const resultMeta: Record<PrecheckItem['result'], { icon: Icon; color: string }> = {
   pass: { icon: IconCircleCheck, color: 'green' },
@@ -23,7 +43,7 @@ const resultMeta: Record<PrecheckItem['result'], { icon: Icon; color: string }> 
   na: { icon: IconCircleDashed, color: 'gray' },
 }
 
-/** 预校验逐项结果。只有号码格式和门户内查重会拦住登记，金额差额只提示（「17」）。 */
+/** 预校验逐项结果。哪些项拦住登记由接口标出；和开票申请的差额只提示（「17」）。 */
 export function PrecheckList({ precheck, title = true }: { precheck: Precheck; title?: boolean }) {
   return (
     <Stack gap={6}>
@@ -45,6 +65,11 @@ export function PrecheckList({ precheck, title = true }: { precheck: Precheck; t
             </Text>
             <Text fz="sm" c={item.result === 'fail' ? 'red.7' : undefined} style={{ minWidth: 0 }}>
               <RichText>{item.message}</RichText>
+              {item.blocking && (
+                <Badge size="xs" color="red" variant="light" ml={6} style={{ verticalAlign: 1 }}>
+                  拦住登记
+                </Badge>
+              )}
             </Text>
           </Group>
         )
@@ -70,11 +95,6 @@ function InvoiceNoCell({ invoice }: { invoice: InvoiceView }) {
           {invoice.invoiceNo}
         </Text>
       </Group>
-      {invoice.legacyCode && (
-        <Text fz={11} c="dimmed">
-          纸票代码 <span className="qs-mono">{invoice.legacyCode}</span>
-        </Text>
-      )}
       {invoice.blueInvoiceNo && (
         <Text fz={11} c="red.7">
           冲 <span className="qs-mono">{invoice.blueInvoiceNo}</span>
@@ -376,6 +396,176 @@ export function RegisterRedModal({ red, onClose }: { red: RedLetterView; onClose
               取消
             </Button>
             <Button type="submit">登记</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  )
+}
+
+const invoiceTypes = ['数电票（增值税专用发票）', '数电票（普通发票）']
+
+/**
+ * 按开票申请登记蓝字数电票（《8》§四）。三个金额照票面填写，不从开票申请自动带入，
+ * 金额关系和差额提示才有意义。边填边预校验，拦住登记的项由接口标出。
+ */
+export function RegisterBlueModal({ request, onClose }: { request: InvoiceRequestView; onClose: () => void }) {
+  const run = useAction()
+  const [busy, setBusy] = useState(false)
+  const form = useForm({
+    initialValues: {
+      invoiceType: invoiceTypes[0] as string | null,
+      invoiceNo: '',
+      issueDate: todayStr() as string | null,
+      taxRate: (request.taxRates.length === 1 ? request.taxRates[0] : '') as number | string,
+      amount: '' as number | string,
+      tax: '' as number | string,
+      netAmount: '' as number | string,
+      attachmentName: '',
+    },
+    validate: {
+      invoiceType: (value) => (value ? null : '请选择票种'),
+      invoiceNo: invoiceNoRule,
+      issueDate: (value) => (value ? null : '请选择开票日期'),
+      taxRate: (value) => (value === '' ? '请填写税率' : null),
+      amount: (value) => (Number(value) > 0 ? null : '价税合计须大于0'),
+      tax: (value) => (value === '' || Number(value) < 0 ? '请填写税额' : null),
+      netAmount: (value, values) =>
+        !(Number(value) > 0) ? '金额须大于0' : round2(Number(value) + Number(values.tax)) !== round2(Number(values.amount)) ? '金额加税额不等于价税合计' : null,
+    },
+  })
+  const values = form.getValues()
+  const typed = values.invoiceNo.trim() !== '' || values.amount !== ''
+  const draft = JSON.stringify({
+    requestId: request.id,
+    invoiceNo: values.invoiceNo.trim(),
+    amount: Number(values.amount) || 0,
+    tax: Number(values.tax) || 0,
+    netAmount: Number(values.netAmount) || 0,
+    taxRate: Number(values.taxRate) || 0,
+  })
+  // 防抖的是字符串：对象每次渲染都是新的，会让防抖永远停不下来
+  const [body] = useDebouncedValue(typed ? draft : null, 300)
+  const precheck = useCompute<Precheck>('/invoices/precheck', body)
+
+  const fillFromRequest = () =>
+    form.setValues({ amount: request.amount, tax: request.tax, netAmount: request.netAmount, taxRate: request.taxRates[0] ?? '' })
+
+  const submit = form.onSubmit(async (input) => {
+    setBusy(true)
+    const result = await run(
+      '/invoices',
+      {
+        requestId: request.id,
+        invoiceType: input.invoiceType,
+        invoiceNo: input.invoiceNo.trim(),
+        issueDate: input.issueDate,
+        taxRate: Number(input.taxRate),
+        amount: Number(input.amount),
+        tax: Number(input.tax),
+        netAmount: Number(input.netAmount),
+        attachmentName: input.attachmentName || undefined,
+      },
+      { success: '已登记蓝字税票' },
+    )
+    setBusy(false)
+    if (result !== undefined) onClose()
+  })
+
+  return (
+    <Modal opened onClose={onClose} title={`登记蓝字税票 · ${request.no}`} size="lg">
+      <form onSubmit={submit}>
+        <Stack gap="sm">
+          <Fields
+            items={[
+              {
+                label: '购买方',
+                value: (
+                  <>
+                    {request.buyerName} <PendingTag n={15} />
+                  </>
+                ),
+                span: 2,
+              },
+              { label: '对账单', value: <DocNo no={request.reconciliationNo} /> },
+              { label: '税率', value: request.taxRates.map((rate) => fmtRate(rate)).join('、') },
+              { label: '应开价税合计', value: <b className="qs-num">{fmtMoney(request.amount)}</b> },
+              { label: '应开税额', value: <span className="qs-num">{fmtMoney(request.tax)}</span> },
+              { label: '应开金额', value: <span className="qs-num">{fmtMoney(request.netAmount)}</span> },
+            ]}
+          />
+          <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm">
+            <Select label="票种" withAsterisk data={invoiceTypes} allowDeselect={false} {...form.getInputProps('invoiceType')} />
+            <TextInput
+              label="发票号码"
+              withAsterisk
+              placeholder="20位数字，没有发票代码"
+              inputMode="numeric"
+              maxLength={20}
+              className="qs-mono"
+              data-autofocus
+              {...form.getInputProps('invoiceNo')}
+            />
+            <DateInput label="开票日期" withAsterisk maxDate={todayStr()} valueFormat="YYYY-MM-DD" {...form.getInputProps('issueDate')} />
+            <NumberInput label="税率" withAsterisk suffix="%" min={0} max={100} decimalScale={2} {...form.getInputProps('taxRate')} />
+          </SimpleGrid>
+          <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm">
+            <NumberInput label="价税合计" withAsterisk min={0} decimalScale={2} thousandSeparator="," {...form.getInputProps('amount')} />
+            <NumberInput label="税额" withAsterisk min={0} decimalScale={2} thousandSeparator="," {...form.getInputProps('tax')} />
+            <NumberInput label="金额（不含税）" withAsterisk min={0} decimalScale={2} thousandSeparator="," {...form.getInputProps('netAmount')} />
+          </SimpleGrid>
+          <Group justify="space-between" gap="xs" wrap="wrap">
+            <Text fz="xs" c="dimmed">
+              三个金额照票面填写
+            </Text>
+            <Button variant="subtle" size="compact-sm" onClick={fillFromRequest}>
+              按开票申请填入，再和票面核对
+            </Button>
+          </Group>
+          <TextInput
+            label="发票文件"
+            description="只记录文件名，不保存文件"
+            readOnly
+            placeholder="点右侧回形针选择文件"
+            rightSectionPointerEvents="all"
+            rightSection={
+              <FileButton onChange={(file) => file && form.setFieldValue('attachmentName', file.name)}>
+                {(props) => (
+                  <ActionIcon {...props} variant="subtle" aria-label="选择发票文件">
+                    <IconPaperclip size={16} />
+                  </ActionIcon>
+                )}
+              </FileButton>
+            }
+            {...form.getInputProps('attachmentName')}
+          />
+          <Paper p="sm" radius="md" bg="gray.0">
+            <Group gap="xs" mb={6} justify="space-between">
+              <Text fz="xs" fw={650} c="dimmed">
+                预校验（边填边算）
+              </Text>
+              {precheck.isFetching && <Loader size={12} />}
+            </Group>
+            {body && precheck.data ? (
+              <PrecheckList precheck={precheck.data} title={false} />
+            ) : (
+              <Text fz="sm" c="dimmed">
+                填写号码或金额后自动预校验
+              </Text>
+            )}
+          </Paper>
+          <Stack gap={4}>
+            <Note>门户先只登记数电票。供应商还会不会开纸质发票和旧版电子发票、号码怎样校验和查重见「44」。</Note>
+            <Note>一张开票申请先登记一张蓝字税票；专票和普票是否不混开、同一张税票内必须相同的项目见「18」。</Note>
+            <Note>和开票申请的差额不拦住登记，容差见「17」；真伪查验未接入「37」。</Note>
+          </Stack>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={onClose}>
+              取消
+            </Button>
+            <Button type="submit" loading={busy}>
+              登记税票
+            </Button>
           </Group>
         </Stack>
       </form>

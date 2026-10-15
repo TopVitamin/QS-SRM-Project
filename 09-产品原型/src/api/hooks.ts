@@ -1,5 +1,5 @@
 import { notifications } from '@mantine/notifications'
-import { useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { REV_STORAGE_KEY } from '../domain/protocol'
 import type { Meta, NavBadges, Pulse } from '../domain/views'
@@ -23,6 +23,17 @@ export function useApi<T>(path: string | null, options: ApiQueryOptions<T> = {})
     queryFn: () => api<T>(path!),
     enabled: path !== null && (options.enabled ?? true),
     ...options,
+  })
+}
+
+/** 只计算、不改数据的POST，例如税票预校验。body传JSON字符串，按值比较；传null暂不计算。重算期间保留上一次结果。 */
+export function useCompute<T>(path: string, body: string | null) {
+  const key = useIdentityKey()
+  return useQuery<T, ApiError, T, readonly unknown[]>({
+    queryKey: [key, path, body],
+    queryFn: () => api<T>(path, { method: 'POST', body: JSON.parse(body!) as unknown }),
+    enabled: body !== null,
+    placeholderData: keepPreviousData,
   })
 }
 

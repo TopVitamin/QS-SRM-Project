@@ -294,7 +294,6 @@ export function requestActions(ctx: Ctx, request: InvoiceRequest) {
 export interface BlueInput {
   requestId: string
   invoiceNo: string
-  legacyCode?: string
   invoiceType: string
   issueDate: string
   amount: number
@@ -344,7 +343,6 @@ export function registerBlue(ctx: Ctx, input: BlueInput) {
     id: nextId(ctx.db, 'fp'),
     kind: 'blue',
     invoiceNo,
-    legacyCode: input.legacyCode?.trim() || undefined,
     invoiceType: requireText(input.invoiceType, '票种'),
     issueDate: requireDate(input.issueDate, '开票日期'),
     supplierCode: request.supplierCode,

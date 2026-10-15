@@ -200,7 +200,7 @@ export function InvoiceRequestDetailPage() {
               <Card>
                 <SectionTitle>已登记税票</SectionTitle>
                 <InvoiceTable rows={request.invoices} actions={(invoice) => <InvoiceRedActions invoice={invoice} />} noRecordsText="供应商还没有登记税票" />
-                <Note>点行展开预校验明细。号码格式和门户内查重会拦住登记；金额差额只提示，容差未设定「17」；真伪查验未接入「37」。</Note>
+                <Note>点行展开预校验明细。号码格式、门户内查重、金额关系不通过时拦住登记；和开票申请的差额只提示，容差见「17」；真伪查验未接入「37」。</Note>
               </Card>
               <Note>一张开票申请先对应一张蓝字税票「18」。SRM不建应付、不付款：应付、核销、付款在金蝶（《3》§3.5）。</Note>
             </Stack>

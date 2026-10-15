@@ -172,7 +172,10 @@ export interface PrecheckInput {
   taxRate: number
 }
 
-/** 税票预校验。只有号码格式和门户内查重会拦住登记，金额差额只提示（「17」）。 */
+/**
+ * 税票预校验。号码格式、门户内查重、金额关系不通过时拦住登记：前两项来自《6》§四，
+ * 金额加税额等于价税合计是票面本身的关系，不是容差。和开票申请的差额只提示（「17」）。
+ */
 export function runPrecheck(db: Db, input: PrecheckInput, request: InvoiceRequest | undefined, tolerance: number | null, now: number): Precheck {
   const items: PrecheckItem[] = []
   const formatOk = /^\d{20}$/.test(input.invoiceNo)
@@ -181,6 +184,7 @@ export function runPrecheck(db: Db, input: PrecheckInput, request: InvoiceReques
     label: '号码格式',
     result: formatOk ? 'pass' : 'fail',
     message: formatOk ? '20位数字，符合数电票号码' : '数电票号码应为20位数字（《6》§四）',
+    blocking: !formatOk,
   })
   const duplicate = db.invoices.some((i) => i.invoiceNo === input.invoiceNo)
   items.push({
@@ -188,13 +192,15 @@ export function runPrecheck(db: Db, input: PrecheckInput, request: InvoiceReques
     label: '门户内查重',
     result: duplicate ? 'fail' : 'pass',
     message: duplicate ? '门户里已登记过这个号码' : '门户内未重复。只查门户内，不代表全网查重（《6》§四）',
+    blocking: duplicate,
   })
   const consistent = round2(input.netAmount + input.tax) === round2(input.amount)
   items.push({
     key: 'consistency',
     label: '金额关系',
     result: consistent ? 'pass' : 'fail',
-    message: consistent ? '金额 + 税额 = 价税合计' : '金额加税额不等于价税合计',
+    message: consistent ? '金额 + 税额 = 价税合计' : '金额加税额不等于价税合计，请按票面核对',
+    blocking: !consistent,
   })
   if (request) {
     for (const [key, label, actual, expected] of [
@@ -230,5 +236,5 @@ export function runPrecheck(db: Db, input: PrecheckInput, request: InvoiceReques
 }
 
 export function precheckBlocking(precheck: Precheck) {
-  return precheck.items.filter((i) => (i.key === 'format' || i.key === 'duplicate') && i.result === 'fail')
+  return precheck.items.filter((i) => i.blocking)
 }

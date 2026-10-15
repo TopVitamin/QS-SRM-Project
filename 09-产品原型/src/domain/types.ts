@@ -500,6 +500,8 @@ export interface PrecheckItem {
   label: string
   result: 'pass' | 'fail' | 'warn' | 'na'
   message: string
+  /** 这一项不通过时拦住登记。 */
+  blocking?: boolean
 }
 
 export interface Precheck {
@@ -514,7 +516,6 @@ export interface Invoice {
   id: string
   kind: 'blue' | 'red'
   invoiceNo: string
-  legacyCode?: string
   invoiceType: string
   issueDate: string
   supplierCode: string
