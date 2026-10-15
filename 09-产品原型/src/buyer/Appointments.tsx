@@ -6,7 +6,7 @@ import { DocNo, Note, ProxyBadge } from '../components/marks'
 import { ReasonModal } from '../components/modals'
 import { PageHeader } from '../components/PageHeader'
 import { QueryState } from '../components/QueryState'
-import { StatusBadge } from '../components/StatusBadge'
+import { StatusBadge, ToneBadge } from '../components/StatusBadge'
 import { useUrlList, useUrlValue } from '../components/urlState'
 import { addDays, parseBjDate, todayStr } from '../domain/format'
 import { statusOptions } from '../domain/labels'
@@ -41,7 +41,14 @@ function AppointmentItem({ appointment, onDialog }: { appointment: AppointmentVi
           <Text fz="sm" fw={650} className="qs-num">
             {appointment.slot}
           </Text>
-          <StatusBadge kind="appointment" value={appointment.status} size="xs" />
+          <Group gap={4} wrap="nowrap">
+            {appointment.finished && (
+              <ToneBadge color="gray" size="xs">
+                已有收货结果
+              </ToneBadge>
+            )}
+            <StatusBadge kind="appointment" value={appointment.status} size="xs" />
+          </Group>
         </Group>
         <Group gap={6} wrap="nowrap">
           <Text fz="sm" truncate="end">

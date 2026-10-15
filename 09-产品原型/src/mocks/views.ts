@@ -36,7 +36,18 @@ import {
   pushJobActions,
   suggestionActions,
 } from './orders'
-import { CONFIRM_LIMIT, invoiceRemaining, lineQty, orderAlerts, receiptStatusOf, requestStatus, shipmentErpStatus, unfinishedChange, activeAppointment } from './rules'
+import {
+  CONFIRM_LIMIT,
+  activeAppointment,
+  appointmentFinished,
+  invoiceRemaining,
+  lineQty,
+  orderAlerts,
+  receiptStatusOf,
+  requestStatus,
+  shipmentErpStatus,
+  unfinishedChange,
+} from './rules'
 import { appointmentActions, boxActions, getShipment, returnActions, shipmentActions } from './shipments'
 import { admissionActions, getSupplier, supplierActions } from './suppliers'
 
@@ -267,6 +278,7 @@ export function appointmentView(ctx: Ctx, appointment: Appointment): Appointment
     ...appointment,
     supplierName: supplierName(ctx, appointment.supplierCode),
     warehouseName: warehouseName(ctx, appointment.warehouseCode),
+    finished: appointmentFinished(ctx.db, appointment),
     actions: appointmentActions(ctx, appointment),
   }
 }

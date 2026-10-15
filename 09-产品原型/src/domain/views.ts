@@ -193,6 +193,8 @@ export interface ShippableOrder {
 export interface AppointmentView extends Appointment {
   supplierName: string
   warehouseName: string
+  /** 这批货已有收货结果，预约不再能确认、退回、改约或取消。 */
+  finished: boolean
   actions: Actions<'confirm' | 'return' | 'reschedule' | 'cancel'>
 }
 

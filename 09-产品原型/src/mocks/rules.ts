@@ -1,6 +1,7 @@
 import { DAY, daysBetween, todayStr } from '../domain/format'
 import { calcAmounts, round2 } from '../domain/money'
 import type {
+  Appointment,
   Box,
   Db,
   Invoice,
@@ -105,6 +106,13 @@ export function activeAppointment(db: Db, shipmentId: string) {
   return db.appointments
     .filter((a) => a.shipmentId === shipmentId && a.status !== 'cancelled')
     .sort((a, b) => b.createdAt - a.createdAt)[0]
+}
+
+/** 这批货已有收货结果（全收、缺量或零收），预约不再能确认、退回、改约或取消。 */
+export function appointmentFinished(db: Db, appointment: Appointment) {
+  const shipment = db.shipments.find((s) => s.id === appointment.shipmentId)
+  const notice = shipment?.noticeId ? db.notices.find((n) => n.id === shipment.noticeId) : undefined
+  return !!notice && notice.status !== 'issued'
 }
 
 type BoxSeed = Omit<Box, 'code' | 'status' | 'printCount' | 'createdAt' | 'seq' | 'total'>

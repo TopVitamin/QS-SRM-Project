@@ -26,7 +26,7 @@ import {
   type ProxyInput,
 } from './core'
 import { getOrder, orderActions, startPush, pushJobActions } from './orders'
-import { activeAppointment, lineQty, moneyLine, planBoxes, shipmentErpStatus } from './rules'
+import { activeAppointment, appointmentFinished, lineQty, moneyLine, planBoxes, shipmentErpStatus } from './rules'
 
 // ---------------------------------------------------------------- 发货单
 
@@ -540,13 +540,11 @@ export function getAppointment(ctx: Ctx, id: string) {
 export function appointmentActions(ctx: Ctx, appointment: Appointment) {
   const supplier = findSupplier(ctx, appointment.supplierCode)
   const self = actorGuard(ctx, supplier)
-  const shipment = ctx.db.shipments.find((s) => s.id === appointment.shipmentId)
-  const notice = shipment?.noticeId ? ctx.db.notices.find((n) => n.id === shipment.noticeId) : undefined
-  const finished = !!notice && notice.status !== 'issued'
+  const finished = appointmentFinished(ctx.db, appointment)
   const warehouse = hasRole(ctx, 'warehouse')
   return {
-    confirm: warehouse && appointment.status === 'pending' ? OK : hide(),
-    return: warehouse && ['pending', 'confirmed'].includes(appointment.status) ? OK : hide(),
+    confirm: warehouse && !finished && appointment.status === 'pending' ? OK : hide(),
+    return: warehouse && !finished && ['pending', 'confirmed'].includes(appointment.status) ? OK : hide(),
     reschedule: self.hidden ? self : appointment.status === 'cancelled' || finished ? hide() : OK,
     cancel: self.hidden ? self : appointment.status === 'cancelled' || finished ? hide() : OK,
   }
