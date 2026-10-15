@@ -104,8 +104,136 @@ body {
   background: var(--mantine-color-red-0);
 }
 
+.qs-row-muted td {
+  color: var(--mantine-color-dimmed);
+  background: var(--mantine-color-gray-0);
+}
+
 .qs-row-highlight td {
   background: var(--mantine-color-jade-0);
+}
+
+/* 可编辑表格（TanStack Table）：表头和列表表格保持一致 */
+.qs-edit-table thead th {
+  background: #f7f9fa;
+  color: #4a5a6a;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.qs-edit-table tfoot td {
+  background: #fafbfc;
+  font-weight: 600;
+}
+
+/* 详情字段栅格：标签在上、值在下 */
+.qs-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 14px;
+}
+
+.qs-fields[data-cols='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.qs-fields[data-cols='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.qs-fields dt {
+  font-size: 12px;
+}
+
+.qs-fields dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 62em) {
+  .qs-fields,
+  .qs-fields[data-cols='3'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36em) {
+  .qs-fields,
+  .qs-fields[data-cols='3'],
+  .qs-fields[data-cols='2'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qs-fields > * {
+    grid-column: auto !important;
+  }
+}
+
+/* 品牌标：青碧渐变方块 */
+.qs-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--mantine-color-jade-5), var(--mantine-color-jade-8));
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.qs-nav-group {
+  padding: 14px 12px 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: #8a98a6;
+}
+
+/* 待办卡片：左侧色条表示语义 */
+.qs-stat {
+  position: relative;
+  overflow: hidden;
+}
+
+.qs-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--qs-stat-tone, var(--mantine-color-gray-4));
+}
+
+.qs-stat[data-empty] {
+  opacity: 0.72;
+}
+
+/* 门户手机端：主要动作固定在底部标签栏上方 */
+.qs-sticky-actions {
+  position: sticky;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 50;
+  margin: 0 calc(var(--mantine-spacing-md) * -1);
+  padding: 10px var(--mantine-spacing-md);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--qs-border);
+}
+
+@media (min-width: 48em) {
+  .qs-sticky-actions {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border-top: 0;
+  }
 }
 
 /* 门户手机端：可点区域不小于44px */
@@ -178,7 +306,8 @@ body {
 .qs-barcode-slot {
   border: 1.5px dashed #98a6b3;
   border-radius: 4px;
-  background: repeating-linear-gradient(90deg, #f3f5f7 0 6px, #fff 6px 12px);
+  /* 斜纹只表示占位，不画成条码的样子（「23」码制未定） */
+  background: repeating-linear-gradient(135deg, #f3f5f7 0 8px, #fff 8px 16px);
 }
 
 @media print {
