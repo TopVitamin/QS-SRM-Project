@@ -642,7 +642,7 @@ export function buildSeed(now: number): Db {
     simulateReturn(ctx, receiptOf(ctx, 'M.s1'), { lineNo: 1, qty: 30, reason: '示例：外观划伤，退回30个' })
   })
 
-  // 已确认待发货；建议被驳回；变更待审核
+  // 已确认，先发一批还没预约；建议被驳回；变更待审核
   order('N', { who: 'b1', at: D(4, '10:00'), supplier: S1, warehouse: SZ, promised: Dd(12), lines: [[C1, 3000], [C2, 1000]] })
   approve('N', 'b2', D(4, '10:30'))
   confirm('N', 'S1', D(4, '15:00'))
@@ -654,6 +654,7 @@ export function buildSeed(now: number): Db {
   at(D(1, '10:00'), 'b1', (ctx) => {
     createChange(ctx, get('N'), { promisedDate: Dd(15), reason: '示例：收货仓排期调整，交期延后3天' }, true)
   })
+  ship('N.s1', { who: 'S1', at: H(3), lines: [[1, 1000, 250, 'XC-D01']], plateNo: '粤S示例302' })
 
   // 变更被驳回；预约被仓库退回改约
   order('O', { who: 'b1', at: D(10, '10:00'), supplier: S1, warehouse: SZ, promised: Dd(4), lines: [[C2, 2000]] })
