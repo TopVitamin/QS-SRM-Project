@@ -170,6 +170,11 @@ function OrderDetailContent({ order }: { order: OrderDetail }) {
         {order.overdue24h && (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} title="下发超过24小时仍未确认">
             不会自动视为接受 <PendingTag n={19} />，请联系供应商在门户里确认或拒绝。
+            {order.suggestions.length > 0 && (
+              <>
+                供应商提交过交期建议，算不算按时响应见 <PendingTag n={45} />。
+              </>
+            )}
           </Alert>
         )}
         {order.pushStatus === 'failed' && (
