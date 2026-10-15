@@ -2,6 +2,7 @@ import { Anchor, Box, Group, Stack, Text, Title } from '@mantine/core'
 import { IconChevronLeft } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { RichText } from './marks'
 
 interface PageHeaderProps {
   title: ReactNode
@@ -32,7 +33,7 @@ export function PageHeader({ title, subtitle, back, badges, actions }: PageHeade
           </Group>
           {subtitle && (
             <Text fz="sm" c="dimmed" mt={4}>
-              {subtitle}
+              {typeof subtitle === 'string' ? <RichText>{subtitle}</RichText> : subtitle}
             </Text>
           )}
         </Box>
