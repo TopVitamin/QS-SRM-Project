@@ -1,0 +1,6 @@
+export { Account } from '../portal/Account'
+export { Invoicing } from '../portal/Invoicing'
+export { PortalAppointments } from '../portal/PortalAppointments'
+export { PortalHome } from '../portal/PortalHome'
+export { PortalOrderDetailPage } from '../portal/PortalOrderDetail'
+export { PortalOrders } from '../portal/PortalOrders'
