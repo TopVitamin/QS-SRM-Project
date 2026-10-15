@@ -292,6 +292,7 @@ export interface PortalDashboard {
 export interface PerformanceRow {
   supplierCode: string
   supplierName: string
+  supplierShortName: string
   tier: SupplierTier
   confirm: { numerator: number; denominator: number; rate: number | null }
   delivery: { numerator: number; denominator: number; rate: number | null }

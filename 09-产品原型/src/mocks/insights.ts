@@ -1,6 +1,6 @@
 import { daysBetween, todayStr } from '../domain/format'
 import { statusDef } from '../domain/labels'
-import type { AuditLog, ErpReceipt, PurchaseOrder } from '../domain/types'
+import type { AuditLog, ErpReceipt } from '../domain/types'
 import type {
   AlertView,
   DashboardCard,
@@ -172,16 +172,20 @@ export function performance(ctx: Ctx, options: PerformanceOptions): PerformanceR
         confirmDen += weight
         if (answer?.action === '确认接单' && answer.at - sent.at <= CONFIRM_LIMIT) confirmNum += weight
       }
+      // 分母是「应交」：已入库的批次或数量，加上过了承诺交期仍欠交的订单或数量，后者按不及时计
       let deliveryNum = 0
       let deliveryDen = 0
-      const receipts: ErpReceipt[] = db.receipts.filter((r) => r.supplierCode === supplier.code)
-      for (const receipt of receipts) {
-        const order = orders.find((o) => o.id === receipt.orderId) as PurchaseOrder | undefined
-        if (!order) continue
+      const today = todayStr(ctx.now)
+      for (const order of orders) {
         const promised = options.promise === 'first' ? order.firstPromisedDate : order.promisedDate
-        const weight = options.basis === 'batch' ? 1 : receipt.lines.reduce((t, l) => t + l.qty, 0)
-        deliveryDen += weight
-        if (receipt.date <= promised) deliveryNum += weight
+        for (const receipt of db.receipts.filter((r) => r.orderId === order.id)) {
+          const weight = options.basis === 'batch' ? 1 : receipt.lines.reduce((t, l) => t + l.qty, 0)
+          deliveryDen += weight
+          if (receipt.date <= promised) deliveryNum += weight
+        }
+        if (order.auditStatus !== 'approved' || order.bizStatus !== 'open' || promised >= today) continue
+        const owed = lineQty(db, order).reduce((t, q) => t + Math.max(0, q.qty - q.received), 0)
+        if (owed > 0) deliveryDen += options.basis === 'batch' ? 1 : owed
       }
       const suggestions = db.suggestions.filter((s) => s.supplierCode === supplier.code)
       const recons = db.reconciliations.filter((r) => r.supplierCode === supplier.code && r.status !== 'cancelled')
@@ -190,6 +194,7 @@ export function performance(ctx: Ctx, options: PerformanceOptions): PerformanceR
       return {
         supplierCode: supplier.code,
         supplierName: supplier.name,
+        supplierShortName: supplier.shortName,
         tier: supplier.tier,
         confirm: ratio(confirmNum, confirmDen),
         delivery: ratio(deliveryNum, deliveryDen),
