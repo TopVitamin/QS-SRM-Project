@@ -1,12 +1,9 @@
 import { Alert, Badge, Box, Button, Card, Container, Group, Radio, Select, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
 import { IconArrowRight, IconBuildingFactory2, IconDeviceDesktop, IconRefresh, IconUserShare } from '@tabler/icons-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { api } from '../api/client'
-import { useApi } from '../api/hooks'
+import { useApi, useDemoReset } from '../api/hooks'
 import { ReasonModal } from '../components/modals'
 import { Note, SampleBadge } from '../components/marks'
 import { LoadingBlock } from '../components/QueryState'
@@ -31,7 +28,7 @@ export function EntryPage() {
   const identity = useSession((s) => s.identity)
   const setIdentity = useSession((s) => s.setIdentity)
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const reset = useDemoReset()
   const [enterpriseId, setEnterpriseId] = useState('u-b1')
   const [supplierCode, setSupplierCode] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
@@ -59,18 +56,6 @@ export function EntryPage() {
       supplierName: supplier.name,
     })
     navigate('/portal')
-  }
-
-  const reset = async () => {
-    try {
-      await api('/demo/reset', { method: 'POST', body: {} })
-      await queryClient.invalidateQueries()
-      notifications.show({ color: 'jade', message: '示例数据已重置' })
-      return true
-    } catch (error) {
-      notifications.show({ color: 'red', title: '没有成功', message: (error as Error).message })
-      return undefined
-    }
   }
 
   return (

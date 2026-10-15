@@ -1,3 +1,4 @@
+import { supplierCategories, supplierTiers } from '../domain/labels'
 import type { Address, Admission, Contact, Supplier, SupplierCategory, SupplierTier } from '../domain/types'
 import {
   BizError,
@@ -15,9 +16,6 @@ import {
   systemCtx,
   type Ctx,
 } from './core'
-
-export const supplierCategories: SupplierCategory[] = ['成品代工', '包材', '配件', '模具', '物流服务']
-export const supplierTiers: SupplierTier[] = ['参股核心', '未分级', '暂停或待淘汰']
 
 export function getSupplier(ctx: Ctx, code: string) {
   const supplier = findSupplier(ctx, code)

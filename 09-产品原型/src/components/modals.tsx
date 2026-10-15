@@ -1,15 +1,8 @@
 import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Text, TextInput, Textarea } from '@mantine/core'
 import { IconUserShare } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
-import { proxyBasisTypes } from '../domain/labels'
+import { emptyProxy, proxyBasisTypes, type ProxyValue } from '../domain/labels'
 import { RichText } from './marks'
-
-export interface ProxyValue {
-  basisType: string
-  basisNote: string
-}
-
-export const emptyProxy: ProxyValue = { basisType: '电话', basisNote: '' }
 
 /** 代录依据：门户未开通的供应商由采购代录，依据必填，日志记代录人、时间和依据（《9》§2.4）。 */
 export function ProxyFields({ value, onChange, error }: { value: ProxyValue; onChange: (value: ProxyValue) => void; error?: string }) {

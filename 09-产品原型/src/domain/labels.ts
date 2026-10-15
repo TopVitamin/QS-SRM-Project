@@ -1,4 +1,4 @@
-import type { EnterpriseRole, Role } from './types'
+import type { EnterpriseRole, Role, SupplierCategory, SupplierTier } from './types'
 
 export interface StatusDef {
   label: string
@@ -109,6 +109,20 @@ export const roleLabels: Record<Role, string> = {
 export const enterpriseRoles: EnterpriseRole[] = ['buyer', 'finance', 'warehouse', 'quality', 'planner', 'admin']
 
 export const proxyBasisTypes = ['电话', '微信', '邮件', '纸质单据', '其他']
+
+/** 代录依据，随代录动作一起提交，记进日志。 */
+export interface ProxyValue {
+  basisType: string
+  basisNote: string
+}
+
+export const emptyProxy: ProxyValue = { basisType: '电话', basisNote: '' }
+
+/** 按供什么来分（《7》§一）；各类有多少家见「25」。 */
+export const supplierCategories: SupplierCategory[] = ['成品代工', '包材', '配件', '模具', '物流服务']
+
+/** 合格名单给出之前只用这三档，不生成「合格」（《8》§三、「32」）。 */
+export const supplierTiers: SupplierTier[] = ['参股核心', '未分级', '暂停或待淘汰']
 
 export const timeSlots = ['08:00-10:00', '10:00-12:00', '13:30-15:30', '15:30-17:30']
 

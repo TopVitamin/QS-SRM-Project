@@ -63,6 +63,22 @@ export function useAction() {
   )
 }
 
+/** 重置示例数据。版本号可能和重置前碰巧相同，所以直接刷新全部查询。成功返回true，失败返回undefined。 */
+export function useDemoReset() {
+  const queryClient = useQueryClient()
+  return useCallback(async () => {
+    try {
+      await api('/demo/reset', { method: 'POST', body: {} })
+      await queryClient.invalidateQueries()
+      notifications.show({ color: 'jade', message: '示例数据已重置' })
+      return true
+    } catch (error) {
+      notifications.show({ color: 'red', title: '没有成功', message: errorMessage(error) })
+      return undefined
+    }
+  }, [queryClient])
+}
+
 /** 布局里挂一次：示例数据版本号变化（本页写入、推送结算、其他标签页写入）时刷新所有查询。 */
 export function usePulseWatcher() {
   const queryClient = useQueryClient()

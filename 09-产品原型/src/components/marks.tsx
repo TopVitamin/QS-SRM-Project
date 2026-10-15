@@ -41,6 +41,16 @@ export function PendingTag({ n }: { n: number }) {
   )
 }
 
+/** 字段名或表头后面跟一个「待确认-n」。 */
+export function PendingLabel({ label, n }: { label: string; n: number }) {
+  return (
+    <Group gap={4} wrap="nowrap" component="span" display="inline-flex">
+      {label}
+      <PendingTag n={n} />
+    </Group>
+  )
+}
+
 const tokenPattern = /待确认-(\d{1,2})|「(\d{1,2})」/g
 
 /** 文字里出现的「待确认-n」或「n」换成可悬停的标记，其余原样输出。 */
