@@ -7,6 +7,8 @@ import { defineConfig } from 'vite'
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 export default defineConfig({
+  // 相对base：dist可以放在任意子路径下静态托管，Hash路由不依赖服务端回退。
+  base: './',
   plugins: [react(), msw({ mode: 'worker-only' })],
   server: {
     fs: { allow: [repoRoot] },

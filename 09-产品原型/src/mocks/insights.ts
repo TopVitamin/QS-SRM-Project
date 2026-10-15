@@ -397,7 +397,22 @@ export function relatedObjectIds(ctx: Ctx, orderId: string) {
   for (const c of db.changes) if (c.orderId === orderId) ids.add(c.id)
   for (const s of db.suggestions) if (s.orderId === orderId) ids.add(s.id)
   for (const k of db.kitting) if (k.orderId === orderId) ids.add(k.id)
-  for (const s of db.shipments) if (s.orderId === orderId) ids.add(s.id)
   for (const j of db.pushJobs) if (j.orderId === orderId) ids.add(j.id)
+  for (const s of db.shipments) if (s.orderId === orderId) for (const id of shipmentObjectIds(ctx, s.id)) ids.add(id)
+  for (const r of db.returns) if (r.orderId === orderId) ids.add(r.id)
+  return [...ids]
+}
+
+export function shipmentObjectIds(ctx: Ctx, shipmentId: string) {
+  const db = ctx.db
+  const ids = new Set<string>([shipmentId])
+  for (const b of db.boxes) if (b.shipmentId === shipmentId) ids.add(b.code)
+  for (const a of db.appointments) if (a.shipmentId === shipmentId) ids.add(a.id)
+  for (const n of db.notices) {
+    if (n.shipmentId !== shipmentId) continue
+    ids.add(n.id)
+    if (n.receiptId) ids.add(n.receiptId)
+  }
+  for (const j of db.pushJobs) if (j.objectId === shipmentId) ids.add(j.id)
   return [...ids]
 }

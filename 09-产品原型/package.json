@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "lint": "oxlint",
+    "lint": "oxlint src scripts vite.config.ts",
     "check:seed": "rolldown scripts/check-seed.ts -p node -f esm -o node_modules/.tmp/check-seed.mjs --logLevel warn && node node_modules/.tmp/check-seed.mjs",
     "preview": "vite preview"
   },

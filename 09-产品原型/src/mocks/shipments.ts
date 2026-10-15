@@ -222,10 +222,12 @@ export function submitShipment(ctx: Ctx, id: string) {
   return shipment
 }
 
-export function cancelShipment(ctx: Ctx, id: string, reason?: string) {
+export function cancelShipment(ctx: Ctx, id: string, input: { reason?: string; proxy?: ProxyInput } = {}) {
   const shipment = getShipment(ctx, id)
   assertOk(shipmentActions(ctx, shipment).cancel)
-  const text = shipment.status === 'submitted' ? requireText(reason, '取消原因') : reason?.trim() || '草稿不再使用'
+  const text = shipment.status === 'submitted' ? requireText(input.reason, '取消原因') : input.reason?.trim() || '草稿不再使用'
+  const proxy = proxyInfo(ctx, findSupplier(ctx, shipment.supplierCode), input.proxy)
+  if (proxy) shipment.proxy = proxy
   shipment.status = 'cancelled'
   shipment.cancelledAt = ctx.now
   shipment.cancelReason = text
@@ -243,7 +245,7 @@ export function cancelShipment(ctx: Ctx, id: string, reason?: string) {
     appointment.status = 'cancelled'
     appointment.history.push({ at: ctx.now, by: ctx.actor.userName, action: '随发货单取消' })
   }
-  logShipment(ctx, shipment, '取消发货单', text)
+  logShipment(ctx, shipment, proxy ? '代录取消发货单' : '取消发货单', text)
   return shipment
 }
 
@@ -287,10 +289,11 @@ export function reprintBox(ctx: Ctx, code: string) {
 }
 
 /** 贴错作废换码：原码作废、新码沿用同一箱内容，追溯里能看到替换关系（《6》§三）。 */
-export function voidBox(ctx: Ctx, code: string, reason: string) {
+export function voidBox(ctx: Ctx, code: string, reason: string, proxy?: ProxyInput) {
   const box = getBox(ctx, code)
   assertOk(boxActions(ctx, box).void)
   const text = requireText(reason, '作废原因')
+  const info = proxyInfo(ctx, findSupplier(ctx, box.supplierCode), proxy)
   const replacement: Box = {
     ...box,
     code: nextBoxCode(ctx.db),
@@ -314,10 +317,11 @@ export function voidBox(ctx: Ctx, code: string, reason: string) {
     objectId: box.code,
     objectNo: box.code,
     supplierCode: box.supplierCode,
-    action: '作废并换码',
+    action: info ? '代录作废并换码' : '作废并换码',
     before: { 箱码: box.code },
     after: { 新箱码: replacement.code },
     note: text,
+    proxy: info,
   })
   return replacement
 }
@@ -631,19 +635,26 @@ export function rescheduleAppointment(ctx: Ctx, id: string, input: AppointmentIn
   const appointment = getAppointment(ctx, id)
   assertOk(appointmentActions(ctx, appointment).reschedule)
   const fields = validateAppointment(ctx, input)
+  const proxy = proxyInfo(ctx, findSupplier(ctx, appointment.supplierCode), input.proxy)
   const before = `${appointment.date} ${appointment.slot}`
   Object.assign(appointment, fields)
+  if (proxy) appointment.proxy = proxy
   appointment.status = ctx.config.appointmentNeedsConfirm ? 'pending' : 'booked'
-  appointment.history.push({ at: ctx.now, by: ctx.actor.userName, action: '改约', note: `${before} → ${fields.date} ${fields.slot}` })
-  logAppointment(ctx, appointment, '改约')
+  const action = proxy ? '代录改约' : '改约'
+  appointment.history.push({ at: ctx.now, by: ctx.actor.userName, action, note: `${before} → ${fields.date} ${fields.slot}` })
+  logAppointment(ctx, appointment, action)
   return appointment
 }
 
-export function cancelAppointment(ctx: Ctx, id: string, reason?: string) {
+export function cancelAppointment(ctx: Ctx, id: string, input: { reason?: string; proxy?: ProxyInput } = {}) {
   const appointment = getAppointment(ctx, id)
   assertOk(appointmentActions(ctx, appointment).cancel)
+  const proxy = proxyInfo(ctx, findSupplier(ctx, appointment.supplierCode), input.proxy)
+  if (proxy) appointment.proxy = proxy
+  const note = input.reason?.trim() || undefined
+  const action = proxy ? '代录取消预约' : '取消预约'
   appointment.status = 'cancelled'
-  appointment.history.push({ at: ctx.now, by: ctx.actor.userName, action: '取消预约', note: reason?.trim() || undefined })
-  logAppointment(ctx, appointment, '取消预约', reason?.trim() || undefined)
+  appointment.history.push({ at: ctx.now, by: ctx.actor.userName, action, note })
+  logAppointment(ctx, appointment, action, note)
   return appointment
 }
