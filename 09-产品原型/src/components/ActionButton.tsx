@@ -35,8 +35,9 @@ export function ActionButton({ state, onClick, children, ...props }: ActionButto
     </Button>
   )
   if (!denied) return button
+  // 手机上没有悬停，点一下置灰的按钮也要能看到原因
   return (
-    <Tooltip label={state?.reason ?? '当前不能操作'} position="top">
+    <Tooltip label={state?.reason ?? '当前不能操作'} position="top" multiline maw={300} events={{ hover: true, focus: true, touch: true }}>
       {button}
     </Tooltip>
   )
