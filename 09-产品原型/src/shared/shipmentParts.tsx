@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core'
+import { Alert, Button, Group, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import { DataTable } from 'mantine-datatable'
@@ -133,6 +133,50 @@ export function ReceiptTable({ rows, extra }: { rows: (ErpReceipt & { supplierNa
         { accessor: 'extra', title: '', hidden: !extra, textAlign: 'right', render: (r) => extra?.(r) },
       ]}
     />
+  )
+}
+
+/** 手机上的采购入库单：每张一张卡片，逐行写实收和通知数量。 */
+export function ReceiptCards({ receipts }: { receipts: ErpReceipt[] }) {
+  if (!receipts.length) {
+    return (
+      <Text fz="sm" c="dimmed" ta="center" py="md">
+        还没有ERP已审核的采购入库单
+      </Text>
+    )
+  }
+  return (
+    <Stack gap="sm">
+      {receipts.map((r) => (
+        <Paper key={r.id} p="md" radius="lg" withBorder>
+          <Stack gap={4}>
+            <Group justify="space-between" wrap="nowrap">
+              <DocNo no={r.no} />
+              <Text fz="xs" className="qs-num">
+                {fmtDate(r.date)}
+              </Text>
+            </Group>
+            <Text fz="xs" c="dimmed">
+              通知单 <span className="qs-mono">{r.noticeNo}</span> · 订单 <span className="qs-mono">{r.orderNo}</span>
+            </Text>
+            {r.lines.map((l) => (
+              <Text key={l.lineNo} fz="sm">
+                第{l.lineNo}行 {l.skuName}：实收 <b className="qs-num">{fmtQty(l.qty)}</b> / 通知 <span className="qs-num">{fmtQty(l.noticeQty)}</span>
+                {l.qty < l.noticeQty && (
+                  <Text span c="orange.8" fz="sm">
+                    {' '}
+                    缺量
+                  </Text>
+                )}
+              </Text>
+            ))}
+            <Text fz="xs" c="dimmed">
+              价税合计 <span className="qs-num">{fmtMoney(sumBy(r.lines, (l) => l.amount))}</span>
+            </Text>
+          </Stack>
+        </Paper>
+      ))}
+    </Stack>
   )
 }
 

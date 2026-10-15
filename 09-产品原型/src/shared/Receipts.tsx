@@ -13,11 +13,10 @@ import { QueryState } from '../components/QueryState'
 import { ResponsiveList } from '../components/ResponsiveList'
 import { StatusBadge, ToneBadge } from '../components/StatusBadge'
 import { useUrlValue } from '../components/urlState'
-import { EMPTY, fmtDate, fmtDateTime, fmtMoney, fmtQty } from '../domain/format'
-import { sumBy } from '../domain/money'
+import { EMPTY, fmtDateTime, fmtQty } from '../domain/format'
 import type { ErpReceipt } from '../domain/types'
 import type { NoticeView, ReturnView } from '../domain/views'
-import { ReceiptLegend, ReceiptTable, ReturnTable } from './shipmentParts'
+import { ReceiptCards, ReceiptLegend, ReceiptTable, ReturnTable } from './shipmentParts'
 
 type NoticeResult = 'waiting' | 'full' | 'short' | 'zero'
 
@@ -103,49 +102,6 @@ function NoticeList({ notices }: { notices: NoticeView[] }) {
           </Stack>
         )}
       />
-    </Stack>
-  )
-}
-
-function ReceiptCards({ receipts }: { receipts: ErpReceipt[] }) {
-  if (!receipts.length) {
-    return (
-      <Text fz="sm" c="dimmed" ta="center" py="md">
-        还没有ERP已审核的采购入库单
-      </Text>
-    )
-  }
-  return (
-    <Stack gap="sm">
-      {receipts.map((r) => (
-        <Paper key={r.id} p="md" radius="lg" withBorder>
-          <Stack gap={4}>
-            <Group justify="space-between" wrap="nowrap">
-              <DocNo no={r.no} />
-              <Text fz="xs" className="qs-num">
-                {fmtDate(r.date)}
-              </Text>
-            </Group>
-            <Text fz="xs" c="dimmed">
-              通知单 <span className="qs-mono">{r.noticeNo}</span> · 订单 <span className="qs-mono">{r.orderNo}</span>
-            </Text>
-            {r.lines.map((l) => (
-              <Text key={l.lineNo} fz="sm">
-                第{l.lineNo}行 {l.skuName}：实收 <b className="qs-num">{fmtQty(l.qty)}</b> / 通知 <span className="qs-num">{fmtQty(l.noticeQty)}</span>
-                {l.qty < l.noticeQty && (
-                  <Text span c="orange.8" fz="sm">
-                    {' '}
-                    缺量
-                  </Text>
-                )}
-              </Text>
-            ))}
-            <Text fz="xs" c="dimmed">
-              价税合计 <span className="qs-num">{fmtMoney(sumBy(r.lines, (l) => l.amount))}</span>
-            </Text>
-          </Stack>
-        </Paper>
-      ))}
     </Stack>
   )
 }
