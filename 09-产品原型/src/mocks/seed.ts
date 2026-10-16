@@ -50,7 +50,7 @@ import {
 import { requestErp, reviewAdmission, saveAdmission, setTier, simulateErpCreate, type AdmissionInput } from './suppliers'
 
 /** 示例数据结构变化时加1，浏览器里旧版本的数据会被重建。 */
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 const S1 = 'SUP000001'
 const S2 = 'SUP000002'
@@ -706,6 +706,17 @@ export function buildSeed(now: number): Db {
       reason: '示例：工厂电话反馈包材晚到，建议交期延后4天',
       proxy: phoneProxy('示例：工厂跟单员来电'),
     })
+  })
+
+  // 已代录确认、还有本次可发：工作台「代录发货」可以直接选单
+  order('PY', { who: 'b2', at: D(2, '10:00'), supplier: S4, warehouse: SZ, promised: Dd(10), lines: [[C1, 800]] })
+  approve('PY', 'b1', D(2, '10:30'))
+  confirm('PY', 'b2', D(2, '14:00'), phoneProxy('示例：与工厂跟单员电话确认，按订单接单'))
+  kit('PY', 'b2', D(1, '11:00'), {
+    lineNo: 1,
+    nodeName: '主料齐套',
+    status: '已齐套',
+    proxy: { basisType: '微信', basisNote: '示例：工厂微信确认主料已齐' },
   })
 
   // 零收：通知单取消，可下推数量还回来
